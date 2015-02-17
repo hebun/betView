@@ -1,0 +1,102 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+	xmlns:h="http://java.sun.com/jsf/html"
+	xmlns:f="http://java.sun.com/jsf/core"
+	xmlns:ui="http://java.sun.com/jsf/facelets"
+	xmlns:c="http://java.sun.com/jsp/jstl/core"
+	xmlns:p="http://primefaces.org/ui"
+	xmlns:pt="http://xmlns.jcp.org/jsf/passthrough">
+<f:view contentType="text/html">
+
+	<h:head>
+
+		<link rel="stylesheet" href="css/layout.css" type="text/css"
+			media="screen" />
+
+
+	</h:head>
+
+	<h:body>
+
+		<p:growl></p:growl>
+		<h:form id="f">
+
+			<p:poll interval="120" immediate="true"
+				listener="#{betting.increment}" widgetVar="myPoll" update="betDt2" />
+
+			<p:ajaxStatus onstart="PF('statusDialog').show()"
+				onsuccess="PF('statusDialog').hide()" />
+			
+
+			<p:dialog widgetVar="statusDialog" modal="true" draggable="false"
+				closable="false" resizable="false" showHeader="false">
+				<p:graphicImage value="images/loading.gif" />
+			</p:dialog>
+
+			<header id="header"> <hgroup>
+
+			<h2 class="section_title">Betfair Panel</h2>
+
+			</hgroup> </header>
+			<!-- end of header bar -->
+
+			<section id="secondary_bar">
+
+			<div class="breadcrumbs_container">
+				<article class="breadcrumbs"> #{betting.user} </article>
+			</div>
+			</section>
+			<!-- end of secondary bar -->
+
+			<aside id="sidebar" class="column">
+
+			<hr />
+			<h3>Menu</h3>
+			<ul style="font-weight: bold">
+				<li class="icn_categories"><a href="index.xhtml">Hepsi</a></li>
+				<li class="icn_categories"><a href="index.xhtml?bt=imaj">Imajbet</a></li>
+				<li class="icn_categories"><a href="index.xhtml?bt=tempo">Tempobet</a></li>
+				<li class="icn_categories"><a href="index.xhtml?bt=youwin">Youwin</a></li>
+<li class="icn_categories"><a href="index.xhtml?bt=wonclub">Wonclub</a></li>
+			</ul>
+
+			</aside>
+			<div></div>
+			<a href="index.xhtml?bt=#{param['bt']}&amp;odd=200"
+				style="font-size: 16px;">Sadece buro orani 2.0 ve ustu olanlari
+				getir</a>
+
+			<p:dataTable tableStyle="width:auto" resizableColumns="true"
+				value="#{betting.profitibles}" var="u" id="betDt2"
+				widgetVar="matchDt" rows="150" emptyMessage="Kayit Bulunamadi"
+				rowKey="#{u.id}">
+				<c:forEach items="#{betting.columns}" var="c">
+
+					<p:column width="20px"
+						styleClass="#{c.name == u['pcol'] || c.name=='de'.concat(u['pcol'])?'firstCol':'xx'}"
+						rendered="#{not empty c.header}" filterBy="#{u[c.name]}"
+						sortBy="#{u[c.name]}" filterStyle="display:none">
+						<f:facet name="header">#{c.header}</f:facet>
+
+
+						<p:outputLabel>#{u[c.name]}</p:outputLabel>
+
+					</p:column>
+				</c:forEach>
+			</p:dataTable>
+
+			<div class="clear"></div>
+			<div class="spacer"></div>
+
+			<h:outputScript>
+ jQuery(document).ready(function() {
+ console.info(PF('myPoll'));
+      PF('myPoll').cfg.fn();
+});
+</h:outputScript>
+
+		</h:form>
+
+	</h:body>
+</f:view>
+</html>
