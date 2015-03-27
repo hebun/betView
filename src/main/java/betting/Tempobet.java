@@ -26,6 +26,7 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.HttpClientBuilder;
 
+import freela.Measure;
 import util.JdbcLong;
 import util.MyLogger;
 
@@ -263,7 +264,7 @@ public class Tempobet {
 	}
 
 	private static StringBuffer getFromNet() {
-		String url = "https://www.tempobet90.com/weekend_football.html";
+		String url = "https://www.tempobet50.com/todays_football.html";
 
 		HttpClient client = HttpClientBuilder.create().build();
 		HttpGet request = new HttpGet(url);

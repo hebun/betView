@@ -15,6 +15,8 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
+import freela.Callable;
+import freela.Measure;
 import util.JdbcLong;
 import util.MyLogger;
 

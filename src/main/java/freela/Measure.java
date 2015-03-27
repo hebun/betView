@@ -53,7 +53,7 @@ public class Measure {
 	public static void main(String[] args) {
 		isMeasure=true;
 
-		dump();
+	//	dump();
 
 	}
 

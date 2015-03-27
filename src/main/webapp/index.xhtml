@@ -26,7 +26,7 @@
 
 			<p:ajaxStatus onstart="PF('statusDialog').show()"
 				onsuccess="PF('statusDialog').hide()" />
-			
+
 
 			<p:dialog widgetVar="statusDialog" modal="true" draggable="false"
 				closable="false" resizable="false" showHeader="false">
@@ -57,7 +57,7 @@
 				<li class="icn_categories"><a href="index.xhtml?bt=imaj">Imajbet</a></li>
 				<li class="icn_categories"><a href="index.xhtml?bt=tempo">Tempobet</a></li>
 				<li class="icn_categories"><a href="index.xhtml?bt=youwin">Youwin</a></li>
-<li class="icn_categories"><a href="index.xhtml?bt=wonclub">Wonclub</a></li>
+				<li class="icn_categories"><a href="index.xhtml?bt=wonclub">Wonclub</a></li>
 			</ul>
 
 			</aside>
@@ -70,6 +70,22 @@
 				value="#{betting.profitibles}" var="u" id="betDt2"
 				widgetVar="matchDt" rows="150" emptyMessage="Kayit Bulunamadi"
 				rowKey="#{u.id}">
+				<p:columnGroup type="header">
+					<p:row>
+						<p:column colspan="6" headerText="Betfair" />
+						<p:column colspan="5" headerText="Buro" />
+					</p:row>
+					<p:row>
+
+						<c:forEach items="#{betting.columns}" var="c">
+
+
+									<p:column  rowspan="1"
+								headerText="#{c.header}" />
+						
+						</c:forEach>
+					</p:row>
+				</p:columnGroup>
 				<c:forEach items="#{betting.columns}" var="c">
 
 					<p:column width="20px"

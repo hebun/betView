@@ -95,32 +95,43 @@ public class JdbcLong {
 	private static Connection conn2;
 	private static PreparedStatement statement2;
 
-	public static void query(String sql) {
+	public static void query(final String sql) {
 		if (true) {
-			// System.out.println(sql);
-			long start = System.currentTimeMillis();
-			if (!started)
-				start("query not started");
-			try {
-				say++;
-				if (say % 100 == 0)
-					System.out.print(say + ".");
-
-				int rs = stmt.executeUpdate(sql);
-
-			} catch (SQLException se) {
-				log.info(se.getMessage()+":"+ sql);
-				throw new RuntimeException(se);
-			} catch (Exception e) {
-				log.info(sql);
-				throw new RuntimeException(e);
-			} finally {
-
-			}// end try
-				// System.out.print(" qt" + (System.currentTimeMillis() - start)
-				// +
-				// ":");
+			Measure.callAndMeasure(new Callable() {
+				
+				@Override
+				public void run() {
+					// TODO Auto-generated method stub
+				queryin(sql);	
+				}
+			}, "querydb");
+			
 		}
+	}
+	private static void queryin(String sql) {
+		// System.out.println(sql);
+		long start = System.currentTimeMillis();
+		if (!started)
+			start("query not started");
+		try {
+			say++;
+			if (say % 100 == 0)
+				System.out.print(say + ".");
+
+			int rs = stmt.executeUpdate(sql);
+
+		} catch (SQLException se) {
+			log.info(se.getMessage()+":"+ sql);
+			throw new RuntimeException(se);
+		} catch (Exception e) {
+			log.info(sql);
+			throw new RuntimeException(e);
+		} finally {
+
+		}// end try
+			// System.out.print(" qt" + (System.currentTimeMillis() - start)
+			// +
+			// ":");
 	}
 
 	public static void prepareStart(String sql) {

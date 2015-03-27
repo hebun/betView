@@ -87,6 +87,15 @@ public class ASCIITable {
 
 	public static void printTableS(List<Map<String, String>> l){
 		if(!isPrintTables)return;
+		
+		for (Map<String, String> map : l) {
+			for (Map.Entry<String, String> col : map.entrySet()) {
+				if(col.getValue()==null){
+					col.setValue("AT_NULL");
+				}
+			}
+		}
+		
 		ASCIITable asciiTable = new ASCIITable();
 		try {
 			asciiTable.printTable(l,true);
@@ -347,7 +356,11 @@ public class ASCIITable {
 	private int getMaxItemLength(List<String> colData) {
 		int maxLength = 0;
 		for (int i = 0; i < colData.size(); i++) {
-			maxLength = Math.max(colData.get(i).length(), maxLength);
+			String string = colData.get(i);
+			if(string==null){
+				string="NULL";
+			}
+			maxLength = Math.max(string.length(), maxLength);
 		}
 		return maxLength;
 	}

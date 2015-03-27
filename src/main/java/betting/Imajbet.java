@@ -16,8 +16,10 @@ import java.nio.file.Files;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import javax.swing.text.MutableAttributeSet;
@@ -36,6 +38,8 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
+import freela.Callable;
+import freela.Measure;
 import util.JdbcLong;
 import util.MyLogger;
 
@@ -55,27 +59,46 @@ public class Imajbet {
 
 	public static void main(String[] args) {
 
-			Imajbet.getMatchs();
-	
+		Measure.callAndMeasure(new Callable() {
+
+			@Override
+			public void run() {
+				// TODO Auto-generated method stub
+				Imajbet.getMatchs();
+
+			}
+		}, "sss");
+
 		Measure.dump();
 	}
 
 	public static StringBuilder insert;
 
-	public static void getMatchs() {
+	protected static void saveToFile(StringBuffer stringBuffer) {
+		try {
+
+			Files.write(Paths.get("./" + Imajbet.class.getName() + ".html"),
+					stringBuffer.toString().getBytes());
+		} catch (IOException e1) {
+
+			e1.printStackTrace();
+		}
+	}
+
+	public static List<Map<String, String>> getMatchs() {
 		log.info("imajbet  started");
 
 		StringBuffer result = getFromNet();
 
 		final String sub;
 		sub = result.toString();
-
+		saveToFile(result);
 		Document doc = Jsoup.parse(sub);
-
+		List<Map<String, String>> matchs = new ArrayList<Map<String, String>>();
 		Elements elements = doc.getElementsByClass("fixtureLayout");
 		log.info("-- got " + elements.size() + " tags of matchs at imajbet");
 		insert = new StringBuilder();
-		insert.append("insert ignore into `tempo`(externId,homeTeam,awayTeam,ht,at,draw,sitename,tarih)"
+		insert.append("insert ignore into `tempo`(externId,homeTeam,awayTeam,ht,at,draw,sitename,tarih,under,over)"
 				+ " values ");
 		int matchCount = 0, failCount = 0;
 		for (Element element : elements) {
@@ -84,8 +107,10 @@ public class Imajbet {
 
 				Elements fixtureEventName = ul
 						.getElementsByClass("fixture-event-name");
-				if (fixtureEventName.size() == 0)
+				
+				if (fixtureEventName.size() == 0){
 					continue;
+				}
 				Element li = fixtureEventName.get(0);
 
 				Elements a = li.getElementsByTag("a");
@@ -93,8 +118,8 @@ public class Imajbet {
 				String homeTeam = a.get(0).text().replace('\'', '"');
 				String awayTeam = a.get(1).text().replace('\'', '"');
 
-				Elements odds = ul.getElementsByClass("fixture-bet-title")
-						.get(0).getElementsByTag("a");
+				Elements betTitles = ul.getElementsByClass("fixture-bet-title");
+				Elements odds = betTitles.get(0).getElementsByTag("a");
 
 				String text = odds.get(0).text().replace(',', '.');
 				int ht = (int) (Float.parseFloat(text) * 100);
@@ -111,11 +136,44 @@ public class Imajbet {
 				String tarih = Calendar.getInstance().get(Calendar.YEAR) + "-"
 						+ dates[1] + "-" + dates[0] + " " + time.text();
 
+				// looking for over/under
+				int under = 0, over = 0;
+				if (betTitles.size() > 1) {
+
+					Elements overUnder = betTitles.get(1).getElementsByTag("a");
+					if (overUnder.size() > 1) {
+						if (overUnder.get(0).attr("title").contains("2.5")) {
+							text3 = overUnder.get(0).text().replace(',', '.');
+							under = (int) (Float.parseFloat(text3) * 100);
+							text3 = overUnder.get(1).text().replace(',', '.');
+							over = (int) (Float.parseFloat(text3) * 100);
+					
+
+						}
+
+					}
+
+				}
+
 				insert.append("('"
 						+ getExternId(homeTeam + awayTeam
 								+ Imajbet.class.getName()) + "','" + homeTeam
 						+ "','" + awayTeam + "'," + ht + "," + at + "," + draw
-						+ ",'imaj','" + tarih + "'),");
+						+ ",'imaj','" + tarih + "',"+under+","+over+"),");
+				
+				Map<String,String> map=new HashMap<String, String>();
+				
+				map.put("homeTeam", homeTeam);
+				map.put("awayTeam", awayTeam);
+				map.put("ht", ht+"");
+				map.put("at", at+"");
+				map.put("draw", draw+"");
+				map.put("buro", "imajbet");
+				map.put("tarih", tarih);
+				map.put("under", under+"");
+				map.put("over", over+"");
+				
+				matchs.add(map);
 				matchCount++;
 
 			} catch (Exception e) {
@@ -124,16 +182,23 @@ public class Imajbet {
 			}
 
 		}
-		insert.deleteCharAt(insert.length() - 1);
-		insert.append(" on duplicate key update ht=Values(ht),at=values(at),draw=values(draw),tarih=values(tarih) ");
-
-		log.info("-- inserting " + matchCount + " matchs for imajbet. "
-				+ failCount + " entris failed");
-		JdbcLong.query(insert.toString());
-		JdbcLong.close("imajbet");
-		// System.out.println(insert.toString());
-		if (true)
-			return;
+//		insert.deleteCharAt(insert.length() - 1);
+//		insert.append(" on duplicate key update ht=Values(ht),at=values(at),draw=values(draw),tarih=values(tarih),"
+//				+ "under=values(under),over=values(over)");
+//
+//		log.info("-- inserting " + matchCount + " matchs for imajbet. "
+//				+ failCount + " entris failed");
+//		Measure.callAndMeasure(new Callable() {
+//			
+//			@Override
+//			public void run() {
+//				// TODO Auto-generated method stub
+//				JdbcLong.query(insert.toString());
+//				JdbcLong.close("imajbet");
+//			}
+//		}, "insert");
+		
+	return matchs;
 
 	}
 
@@ -147,7 +212,8 @@ public class Imajbet {
 
 		HttpClient client = HttpClientBuilder.create().build();
 		HttpGet request = new HttpGet(url);
-		StringBuffer result = new StringBuffer();;
+		StringBuffer result = new StringBuffer();
+		;
 		// add request header
 		request.addHeader("User-Agent", USER_AGENT);
 		request.addHeader("X-Requested-With", "XMLHttpRequest");
@@ -155,25 +221,24 @@ public class Imajbet {
 		for (Header head : request.getAllHeaders()) {
 			// System.out.println(head.getName() + ":" + head.getValue());
 		}
-	
-			HttpResponse response;
-			try {
-				response = client.execute(request);
 
-				BufferedReader rd = new BufferedReader(new InputStreamReader(
-						response.getEntity().getContent()));
+		HttpResponse response;
+		try {
+			response = client.execute(request);
 
-				
-				String line = "";
-				while ((line = rd.readLine()) != null) {
-					result.append(line + "\n");
+			BufferedReader rd = new BufferedReader(new InputStreamReader(
+					response.getEntity().getContent()));
 
-				}
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+			String line = "";
+			while ((line = rd.readLine()) != null) {
+				result.append(line + "\n");
+
 			}
-	
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
 		return result;
 	}
 

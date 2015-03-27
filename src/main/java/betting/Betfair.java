@@ -6,8 +6,11 @@ import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.text.ParseException;
+import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 
@@ -22,7 +25,9 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 import util.MyLogger;
+import freela.Callable;
 import freela.Db;
+import freela.Measure;
 import freela.Sql.Insert;
 
 public class Betfair {
@@ -45,7 +50,7 @@ public class Betfair {
 
 	}
 
-	public static void getMatchs() {
+	public static List<Map<String, String>> getMatchs() {
 		log.info("betfair  started");
 
 		java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat(
@@ -53,46 +58,42 @@ public class Betfair {
 		Calendar now = Calendar.getInstance();
 		// now.add(Calendar.DAY_OF_MONTH, 1);
 		String time = sdf.format(now.getTime());
-		getByDay(time,"0");
-		getByDay(time,"20");
-		now.add(Calendar.DAY_OF_MONTH, 1);
-		time = sdf.format(now.getTime());
-		getByDay(time,"0");
-		getByDay(time,"20");
-		
 
-		if (true)
-			return;
+		List<Map<String, String>> matchs = new ArrayList<Map<String, String>>();
+
+		matchs.addAll(getByDay(time, "0"));
+		matchs.addAll(getByDay(time, "20"));
+		return matchs;
 
 	}
 
-	private static void getByDay(String time,String offset) {
-		StringBuffer result = getFromNet(time,offset);
+	private static List<Map<String, String>> getByDay(String time, String offset) {
+		StringBuffer result = getFromNet(time, offset);
 
 		String sub;
 		sub = result.toString();
 
 		Document doc = Jsoup.parse(sub);
-
+		List<Map<String, String>> matchs = new ArrayList<Map<String, String>>();
 		Elements trs = doc.getElementsByClass("table_line1");
 		for (Element element : trs) {
 			Elements tds = element.getElementsByTag("td");
 			int tdCount = 0;
-			String insert2 = "insert ignore into `betfair`(externId,homeTeam,awayTeam,deht,dedraw,deat,tarih) values(";
-			Insert insert = new Insert("match").doNotUsePrepared().ignore();
+			final Map<String, String> match = new HashMap<String, String>();
+			boolean depthSet = false;
 			for (Element td : tds) {
 				if (td.parent() == element) {
 
 					if (td.hasAttr("width")) {
 						if (td.attr("width").equals("220")) {
 
-							insert.add("homeTeam", td.text().split(" v ")[0]);
-							insert.add("awayTeam", td.text().split(" v ")[1]);
+							match.put("homeTeam", td.text().split(" v ")[0]);
+							match.put("awayTeam", td.text().split(" v ")[1]);
 							String query = td.getElementsByTag("a")
 									.attr("href").split(Pattern.quote("?"))[1];
 							try {
 								String id = splitQuery(query).get("id");
-								insert.add("externId", id);
+								match.put("externId", id);
 
 							} catch (UnsupportedEncodingException e) {
 								// TODO Auto-generated catch block
@@ -105,7 +106,7 @@ public class Betfair {
 									"yyyy-MM-dd HH:mm");
 							try {
 								String timeText = time + " " + td.text();
-								insert.add("tarih", timeText);
+								match.put("tarih", timeText);
 
 								sdft.parse(timeText);
 							} catch (ParseException e) {
@@ -122,27 +123,43 @@ public class Betfair {
 
 						if (tdCount == 0) {
 
-							insert.add("deht", odd);
+							match.put("deht", odd);
 						}
 						if (tdCount == 1) {
 
-							insert.add("dedraw", odd);
+							match.put("dedraw", odd);
 						}
 						if (tdCount == 2) {
 
-							insert.add("deat", odd);
+							match.put("deat", odd);
+						}
+						if (tdCount == 3) {
+
+							match.put("deunder", odd);
+						}
+						if (tdCount == 4) {
+
+							match.put("deover", odd);
 						}
 
 						tdCount++;
 					}
+					Elements strongs = td.getElementsByTag("strong");
+					if (strongs.size() > 0 && !depthSet) {
+
+						Element stro = strongs.get(0);
+						if (stro.getElementsByTag("a").size() == 0) {
+							match.put("depth", stro.text());
+							depthSet = true;
+						}
+					}
 				}
 			}
-			String ondup = " on duplicate key update deht=Values(deht),deat=values(deat),dedraw=values(dedraw),tarih=values(tarih)";
+	
 
-			Db.insert(insert.get() + ondup);
-
-			// insert.run();
+			matchs.add(match);
 		}
+		return matchs;
 
 	}
 
@@ -159,19 +176,18 @@ public class Betfair {
 		return query_pairs;
 	}
 
-	private static StringBuffer getFromNet(String time,String offset) {
+	private static StringBuffer getFromNet(String time, String offset) {
 
 		String url = "http://www.oddsfair.net/frame/en/index.php?date=" + time
-				+ "&order=1x2desc&offset="+offset;
-	//	log.info(url);
+				+ "&order=1x2desc&offset=" + offset;
+		// log.info(url);
 		HttpClient client = HttpClientBuilder.create().build();
 		HttpGet request = new HttpGet(url);
 		StringBuffer result = null;
 		// add request header
 		request.addHeader("User-Agent", USER_AGENT);
 		// request.addHeader("X-Requested-With", "XMLHttpRequest");
-		request.addHeader("Referer",
-				url);
+		request.addHeader("Referer", url);
 		for (Header head : request.getAllHeaders()) {
 			// System.out.println(head.getName() + ":" + head.getValue());
 		}

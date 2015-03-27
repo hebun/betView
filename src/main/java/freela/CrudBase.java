@@ -10,6 +10,7 @@ import freela.Sql.Update;
 
 public class CrudBase {
 	String table;
+
 	public void setTable(String table) {
 		this.table = table;
 	}
@@ -23,8 +24,6 @@ public class CrudBase {
 	List<Map<String, String>> data;
 	Map<String, String> selected;
 
-	
-
 	public CrudBase() {
 
 		// initColumns();
@@ -32,7 +31,8 @@ public class CrudBase {
 
 	public void initColumns() {
 		columns = new Sql.Select("id,header,name").from("gridfield")
-				.where("tableName", this.table).and("state", "0").getType(ColumnModel.class);
+				.where("tableName", this.table).and("state", "0").order("no")
+				.getType(ColumnModel.class);
 
 	}
 
@@ -133,6 +133,7 @@ public class CrudBase {
 		this.error("Hata Oluştu.");
 
 	}
+
 	public List<Map<String, String>> getData() {
 		return data;
 	}

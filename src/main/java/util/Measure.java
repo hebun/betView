@@ -1,4 +1,4 @@
-package betting;
+package util;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -22,19 +22,7 @@ public class Measure {
 
 	}
 
-	public static double similarityImp(final String s1, final String s2) {
 
-		callAndMeasure(new Callable() {
-
-			@Override
-			public void run() {
-				ret = LevenshteinDistance.similarity(s1, s2);
-			}
-		}, "similarity");
-
-		return ret;
-
-	}
 
 	public static void callAndMeasure(Callable callable, final String namep) {
 		long start = System.currentTimeMillis();

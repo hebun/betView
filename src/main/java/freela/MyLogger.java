@@ -16,24 +16,17 @@ public class MyLogger implements Serializable {
 	private int level;
 	
 	private String format(String level, String message) {
-
-		StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
-
-		String caller = stackTrace[4].getMethodName();
+		
+		
 		StringBuilder builder = new StringBuilder(1000);
 		builder.append("[").append(level).append("] ");
 		builder.append(message);
 
-		builder.append("    [" + stackTrace[3].getMethodName()).append("]<-")
-				.append(caller).append(" - ");
-		builder.append(df.format(new Date())).append(" - ");
-		builder.append("[").append(stackTrace[3].getClassName()).append(".")
-				.append(stackTrace[3].getMethodName()).append("]");
-
-		for (@SuppressWarnings("unused") StackTraceElement stackTraceElement : stackTrace) {
-			// System.out.print(stackTraceElement.getMethodName()+"<-");
-		}
+	
+	
+		
 		return builder.toString();
+		
 	}
 
 	public MyLogger(int level) {

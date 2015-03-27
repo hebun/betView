@@ -8,10 +8,18 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Properties;
 
 import javax.faces.bean.ManagedBean;
 import javax.faces.bean.ViewScoped;
-import javax.faces.component.behavior.AjaxBehavior;
+import javax.mail.Message;
+import javax.mail.MessagingException;
+import javax.mail.PasswordAuthentication;
+import javax.mail.Session;
+import javax.mail.Transport;
+import javax.mail.internet.InternetAddress;
+import javax.mail.internet.MimeMessage;
 
 import util.JdbcLong;
 import freela.CrudBase;
@@ -33,16 +41,6 @@ public class Betting extends CrudBase implements Serializable {
 
 	private static final long serialVersionUID = 1120356482214096067L;
 
-	private boolean loading = true;
-
-	public boolean isLoading() {
-		return loading;
-	}
-
-	public void setLoading(boolean loading) {
-		this.loading = loading;
-	}
-
 	@SuppressWarnings("rawtypes")
 	public Map parameters;
 
@@ -62,7 +60,10 @@ public class Betting extends CrudBase implements Serializable {
 
 	private MyLogger log = new MyLogger(3);
 
+	private String console;
+
 	public Betting(String console) {
+		this.console = console;
 		this.setTable("dualView");
 	}
 
@@ -109,11 +110,11 @@ public class Betting extends CrudBase implements Serializable {
 		Imajbet.getMatchs();
 
 		Youwin.getMatchs();
-		
+
 		WonClub.getMatchs();
-		
+
 		Betfair.getMatchs();
-		SwingMain.populateDualMatchs();
+		//SwingMain.populateDualMatchs();
 		JdbcLong.query("insert into betfairupdate(type,tarih) values('FETCH',NOW())");
 		JdbcLong.close("");
 
@@ -126,9 +127,147 @@ public class Betting extends CrudBase implements Serializable {
 		loadList();
 	}
 
+	boolean emailSent = false;
+
+	public void sendMail() {
+
+		log.info("sending emails...");
+		final String username = "itung73@gmail.com";
+		final String password = "280682gmt";
+
+		Properties props = new Properties();
+		props.put("mail.smtp.auth", "true");
+		props.put("mail.smtp.starttls.enable", "true");
+		props.put("mail.smtp.host", "smtp.gmail.com");
+		props.put("mail.smtp.port", "587");
+
+		Session session = Session.getInstance(props,
+				new javax.mail.Authenticator() {
+					protected PasswordAuthentication getPasswordAuthentication() {
+						return new PasswordAuthentication(username, password);
+					}
+				});
+
+		try {
+
+			MimeMessage message = new MimeMessage(session);
+			message.setFrom(new InternetAddress("bfprogram@gmail.com"));
+			message.setRecipients(Message.RecipientType.TO,
+			// isatonk1@gmail.com,mazlumkaplan88@gmail.com,
+					InternetAddress
+							.parse("isatonk1@gmail.com,ismettung@gmail.com,mazlumkaplan88@gmail.com"));
+			message.setSubject("betfair maclar");
+
+			List<Map<String, String>> forMail = new ArrayList<Map<String, String>>();
+			for (Map<String, String> map : profitibles) {
+				LinkedHashMap<String, String> e = new LinkedHashMap<String, String>();
+
+				e.put("Mac", map.get("bfMac"));
+
+				String oranName = "";
+
+				if (map.get("pcol").equals("ht")) {
+
+					oranName = "1";
+
+				} else if (map.get("pcol").equals("at")) {
+
+					oranName = "2";
+
+				} else if (map.get("pcol").equals("draw")) {
+
+					oranName = "0";
+				} else if (map.get("pcol").equals("under")) {
+
+					oranName = "Alt";
+				} else if (map.get("pcol").equals("over")) {
+
+					oranName = "Ust";
+				}
+				e.put("Bahis", oranName);
+				String pcol = map.get(map.get("pcol"));
+				if (pcol.length() < 4) {
+					pcol += "0";
+				}
+				String depcol = map.get("de" + map.get("pcol"));
+
+				if (depcol.length() < 4) {
+					depcol += "0";
+				}
+
+				e.put("Oran",
+						"<span style='background-color: #D2EC6E;border-width: 1px;border-style: solid;'>"
+								+ pcol
+								+ "</span> "
+								+ "<span style='background-color: #F3BE93;border-width: 1px;border-style: solid;'>"
+								+ depcol + "</span>");
+				e.put("Tarih", map.get("tarih"));
+				e.put("Buro", map.get("buroTable"));
+				e.put("BF Hacim", map.get("depth"));
+
+				forMail.add(e);
+			}
+
+			StringBuilder content = new StringBuilder("<html>	<head>"
+					+ "		<style>	.backblock{" + "	background-color:#d2ec6e;"
+					+ "	width:50%;" + "	text-align:center;"
+					+ "	font-weight:bold;" + "	padding:2px 2px 2px 2px ;"
+					+ "	border-bottom:1px solid #8fa343;"
+					+ "	border-right:1px solid #8fa343;"
+					+ "	border-top:1px solid #e0eaba;"
+					+ "	border-left:1px solid #e0eaba;" + "}" + ".layblock{"
+					+ "	background-color:#f3be93;"
+					+ "	padding:2px 2px 2px 2px ;" + "	width:50%;"
+					+ "	text-align:center;" + "	font-weight:bold;"
+					+ "	border-bottom:1px solid #b5845d;"
+					+ "	border-right:1px solid #b5845d;"
+					+ "	border-top:1px solid #f1e0d2;"
+					+ "	border-left:1px solid #f1e0d2;" + "}" + "</style>" +
+
+					"</head><body><table border='1'>");
+			content.append("<tr>");
+			for (Map<String, String> col : forMail) {
+
+				for (Entry<String, String> colx : col.entrySet()) {
+
+					content.append("<td><b>" + colx.getKey());
+					content.append("</b></td>");
+
+				}
+				break;
+			}
+			content.append("</tr>");
+			for (Map<String, String> map : forMail) {
+
+				content.append("<tr>");
+				for (Map.Entry<String, String> td : map.entrySet()) {
+
+					content.append("<td>");
+
+					content.append(td.getValue());
+
+					content.append("</td>");
+
+				}
+				content.append("</tr>");
+
+			}
+			content.append("</table></body></html>");
+
+			message.setText(content.toString(), "utf-8", "html");
+
+			Transport.send(message);
+
+			System.out.println("Done");
+
+		} catch (MessagingException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
 	public void loadList() {
 
-		if (checkCall("FETCH")) {
+		if (checkCall("FETCH", 5)) {
 
 			// if (bt == null || bt.equals("") || bt.equals("tempo")) {
 			Tempobet.getWeekend();
@@ -136,19 +275,24 @@ public class Betting extends CrudBase implements Serializable {
 			// if (bt == null || bt.equals("") || bt.equals("imaj")) {
 			Imajbet.getMatchs();
 
-			Youwin.getMatchs();
-			
-			WonClub.getMatchs();
-			
+			// Youwin.getMatchs();
+
+			// WonClub.getMatchs();
+
 			Betfair.getMatchs();
-			
-			SwingMain.populateDualMatchs();
+
+		//	SwingMain.populateDualMatchs();
 			JdbcLong.query("insert into betfairupdate(type,tarih) values('FETCH',NOW())");
 			JdbcLong.close("");
+
 		}
 		initColumns();
 		findProfitibleMatches();
-
+		if (checkCall("MAIL", 120)) {
+			sendMail();
+			JdbcLong.query("insert into betfairupdate(type,tarih) values('MAIL',NOW())");
+			JdbcLong.close("");
+		}
 		// try {
 		// Thread.sleep(2000);
 		// } catch (InterruptedException e) {
@@ -157,10 +301,11 @@ public class Betting extends CrudBase implements Serializable {
 		// }
 	}
 
-	public static boolean checkCall(String string) {
+	public static boolean checkCall(String string, int min) {
 		List<Map<String, String>> dataTable = JdbcLong
 				.select("select * from betfairupdate where type='" + string
-						+ "' and tarih >= DATE_SUB(NOW(),INTERVAL 5 MINUTE)");
+						+ "' and tarih >= DATE_SUB(NOW(),INTERVAL " + min
+						+ " MINUTE)");
 
 		return dataTable.size() == 0;
 
@@ -179,9 +324,11 @@ public class Betting extends CrudBase implements Serializable {
 	}
 
 	public static void main(String[] args) {
-		Betting betting = new Betting("blba");
+		args = args;
+		Betting betting = new Betting("console");
 		betting.loadList();
 		ASCIITable.printTableS(betting.getProfitibles());
+
 	}
 
 	private int withOdd = 0;
@@ -216,6 +363,8 @@ public class Betting extends CrudBase implements Serializable {
 
 			checkPro(dual, "deat", "at");
 			checkPro(dual, "dedraw", "draw");
+			checkPro(dual, "deunder", "under");
+			checkPro(dual, "deover", "over");
 
 		}
 
@@ -231,19 +380,22 @@ public class Betting extends CrudBase implements Serializable {
 			}
 		});
 		for (Map<String, String> map : profitibles) {
-			String col = "deht";
 
-			divideBy100(map, col);
+			divideBy100(map, "deht");
 			divideBy100(map, "ht");
 			divideBy100(map, "at");
 			divideBy100(map, "deat");
 			divideBy100(map, "draw");
 			divideBy100(map, "dedraw");
+			divideBy100(map, "under");
+			divideBy100(map, "deunder");
+			divideBy100(map, "over");
+			divideBy100(map, "deover");
 
 		}
 		log.info("-- found " + profitibles.size() + " profitible matchs ");
 		// new ASCIITable().printTable(profitibles, true);
-		Measure.dump();
+	//	Measure.dump();
 
 	}
 

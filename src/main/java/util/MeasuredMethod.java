@@ -1,4 +1,4 @@
-package betting;
+package util;
 
 public class MeasuredMethod {
 
